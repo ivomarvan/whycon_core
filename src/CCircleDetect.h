@@ -2,10 +2,13 @@
 #define WHYCON__CCIRCLEDETECT_H
 
 #include <math.h>
-#include "whycon/CRawImage.h"
-#include "whycon/CTransformation.h"
-#include "whycon/CNecklace.h"
-#include "whycon/SStructDefs.h"
+#include "CRawImage.h"
+#include "CTransformation.h"
+#include "CNecklace.h"
+#include "SStructDefs.h"
+
+namespace whycon {
+
 
 /*TODO note #07*/
 #define COLOR_PRECISION 32
@@ -14,8 +17,6 @@
 #define OUTER 1
 #define MAX_PATTERNS 50
 
-namespace whycon
-{
 
 typedef struct{
     float x, y;
@@ -27,7 +28,7 @@ typedef struct{
 class CCircleDetect {
     public:
         //constructor, wi and he correspond to the image dimensions 
-        CCircleDetect(int wi, int he, bool id, int bits, int samples, bool draw, CTransformation *trans, CNecklace *decoder);
+        CCircleDetect(int wi, int he, bool id, int id_bits, int id_samples, bool draw, CTransformation *trans, CNecklace *decoder, bool debug = false);
 
         //deallocate the detector's structures
         ~CCircleDetect();
@@ -63,15 +64,20 @@ class CCircleDetect {
         int debug;                  // debug level
         bool draw_, lastTrackOK;     // flags to draw results - used for debugging
         bool localSearch;           // used when selecting the circle by mouse click
-        bool identify;              // attempt to identify segments
+       
 
     private:
         CTransformation *trans_;
         CNecklace *decoder_;
         
-        int idBits;
-        int idSamples;
-        int hammingDist;
+        int width;
+        int height;
+        int len;
+        bool identify;              // attempt to identify segments
+
+        int id_bits;
+        int id_samples;
+        int hamming_dist;
         bool track;
         int maxFailed;
         int numFailed;
@@ -95,8 +101,7 @@ class CCircleDetect {
         SSegment inner;
         SSegment outer;
         float outerAreaRatio, innerAreaRatio, areasRatio;
-        int queueStart, queueEnd, queueOldStart, numSegments;
-        int width, height, len;
+        int queueStart, queueEnd, queueOldStart, numSegments;        
         int expand[4];
         unsigned char *ptr;
         int tima, timb, timc, timd, sizer, sizerAll;
@@ -114,7 +119,7 @@ class CCircleDetect {
         STrackedObject tracked_object;
 };
 
-}
+} // namespace whycon
 
 #endif
 

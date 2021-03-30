@@ -4,23 +4,45 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "whycon/CRawImage.h"
+#include "CRawImage.h"
 
-namespace whycon
-{
+namespace whycon {
+
 
 CRawImage::CRawImage(int width, int height, int bpp) :
     width_(width),
     height_(height),
     bpp_(bpp),
-    size_(width * height * bpp)
+    size_(width * height * bpp),
+    ownData_(true)
 {
     data_ = (unsigned char*) std::malloc(sizeof(unsigned char) * size_);
 }
 
+// share data of image (for example with Python code)
+CRawImage::CRawImage(unsigned char* new_data, int width, int height, int bpp = 3):
+    width_(width),
+    height_(height),
+    bpp_(bpp),
+    size_(width * height * bpp),
+    data_(new_data),
+    ownData_(false) {}
+
 CRawImage::~CRawImage()
 {
-    std::free(data_);
+    if (ownData_) std::free(data_);
+}
+
+
+void CRawImage::swapRGB()
+{
+  for (int j = 0;j<height_;j++){
+	  for (int i = 0;i<width_;i++){
+		  char a = data_[(width_*j+i)*3]; 
+		  data_[(width_*j+i)*3] = data_[(width_*j+i)*3+2];
+		  data_[(width_*j+i)*3+2] = a; 
+	  }
+  }
 }
 
 void CRawImage::updateImage(unsigned char* new_data, int width, int height, int bpp)
@@ -201,4 +223,4 @@ double CRawImage::getOverallBrightness(bool upperHalf)
     return (sum / num / bpp_) + (satMax - satMin) * 100.0 / num;
 }
 
-}
+} // namespace whycon

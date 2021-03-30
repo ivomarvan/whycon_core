@@ -1,7 +1,5 @@
-#include "whycon/CTimer.h"
-
-namespace whycon
-{
+#include "CTimer.h"
+namespace whycon {
 
 CTimer::CTimer(int timeout)
 {
@@ -64,4 +62,4 @@ int CTimer::start()
   return getTime();
 }
 
-}
+} // namespace whycon

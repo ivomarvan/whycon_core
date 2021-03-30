@@ -1,32 +1,33 @@
 #include <cstdio>
-#include "whycon/CCircleDetect.h"
+#include "CCircleDetect.h"
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
-namespace whycon
-{
+namespace whycon {
 
 int* CCircleDetect::buffer = NULL;
 int* CCircleDetect::queue = NULL;
 
 
 //Variable initialization
-CCircleDetect::CCircleDetect(int wi, int he, bool id, int bits, int samples, bool draw, CTransformation *trans, CNecklace *decoder) :
+CCircleDetect::CCircleDetect(int wi, int he, bool id, int id_bits, int id_samples, bool draw, CTransformation *trans, CNecklace *decoder, bool debug) :
     width(wi),
     height(he),
+    len(width * height),
     identify(id),
-    idBits(bits),
-    idSamples(samples),
+    id_bits(id_bits),
+    id_samples(id_samples),
     draw_(draw),
     trans_(trans),
-    decoder_(decoder)
+    decoder_(decoder),
+    debug(debug)
+
 {
     step = -1;
     ID = -1;
     enableCorrections = false;
     lastTrackOK = false;
-    debug = false;
     maxFailed = 0;
     minSize = 100;
     maxThreshold = 256;
@@ -39,8 +40,7 @@ CCircleDetect::CCircleDetect(int wi, int he, bool id, int bits, int samples, boo
     track = true;
     circularityTolerance = 0.02;
 
-    //initialization - fixed params
-    len = width * height;
+    //initialization - fixed params    
     ownBuffer = false;
     if (buffer == NULL)
     {
@@ -610,34 +610,34 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
 
     int pos = 0;
 
-    float x[2][idSamples];
-    float y[2][idSamples];
-    float signal[2][idSamples];
-    float smooth[2][idSamples];
-    int segmentWidth = idSamples / idBits / 2;
+    float x[2][id_samples];
+    float y[2][id_samples];
+    float signal[2][id_samples];
+    float smooth[2][id_samples];
+    int segmentWidth = id_samples / id_bits / 2;
 
     int maxIdx[2];
-    int maxIndex = 0;
+    int max_index = 0;
     float numPoints[2];
 
-    char code[2][idBits * 4];
+    char code[2][id_bits * 4];
     
     for(int i = 0; i < 2; i++)
     {
         //calculate appropriate positions
         float topY = 0;
         int topIndex = 0;
-        for (int a = 0; a < idSamples; a++)
+        for (int a = 0; a < id_samples; a++)
         {
-            x[i][a] = tmp[i].x+(tmp[i].m0*cos((float)a/idSamples*2*M_PI)*tmp[i].v0+tmp[i].m1*sin((float)a/idSamples*2*M_PI)*tmp[i].v1)*2.0;
-            y[i][a] = tmp[i].y+(tmp[i].m0*cos((float)a/idSamples*2*M_PI)*tmp[i].v1-tmp[i].m1*sin((float)a/idSamples*2*M_PI)*tmp[i].v0)*2.0;
+            x[i][a] = tmp[i].x+(tmp[i].m0*cos((float)a/id_samples*2*M_PI)*tmp[i].v0+tmp[i].m1*sin((float)a/id_samples*2*M_PI)*tmp[i].v1)*2.0;
+            y[i][a] = tmp[i].y+(tmp[i].m0*cos((float)a/id_samples*2*M_PI)*tmp[i].v1-tmp[i].m1*sin((float)a/id_samples*2*M_PI)*tmp[i].v0)*2.0;
         }
 
         //retrieve the image brightness on these using bilinear transformation
         float gx, gy;
         int px, py;
         unsigned char* ptr = image->data_;
-        for (int a = 0; a < idSamples; a++)
+        for (int a = 0; a < id_samples; a++)
         {
             px = x[i][a];
             py = y[i][a];
@@ -653,10 +653,10 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
 
         //binarize the signal
         float avg = 0;
-        for (int a = 0; a < idSamples; a++)
+        for (int a = 0; a < id_samples; a++)
             avg += signal[i][a];
-        avg = avg / idSamples;
-        for (int a = 0;a<idSamples;a++)
+        avg = avg / id_samples;
+        for (int a = 0;a<id_samples;a++)
         {
             if (signal[i][a] > avg)
                 smooth[i][a] = 1;
@@ -670,12 +670,12 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
         float sx, sy;
         sx = sy = 0;
         numPoints[i] = 0;
-        if (smooth[i][idSamples - 1] != smooth[i][0])
+        if (smooth[i][id_samples - 1] != smooth[i][0])
         {
             sx = 1;
             numPoints[i] = 1;
         }
-        for (int a = 1; a < idSamples; a++)
+        for (int a = 1; a < id_samples; a++)
         {
             if (smooth[i][a] != smooth[i][a - 1])
             {
@@ -694,9 +694,9 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
         float meanY = sy / numPoints[i];
         float errX, errY;
         sx = sy = 0;
-        if (smooth[i][idSamples - 1] != smooth[i][0])
+        if (smooth[i][id_samples - 1] != smooth[i][0])
             sx = 1;
-        for (int a = 1; a < idSamples; a++)
+        for (int a = 1; a < id_samples; a++)
         {
             if (smooth[i][a] != smooth[i][a - 1])
             {
@@ -708,20 +708,20 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
             }
         }
         variance[i] = sum[i] / numPoints[i];
-        printf("idx %d var %f sum %f numPoints %f\n", i, variance[i], sum[i], numPoints[i]);
+        if (debug) printf("idx %d var %f sum %f numPoints %f\n", i, variance[i], sum[i], numPoints[i]);
 
         //determine raw code
-        for (int a = 0; a < idBits * 2; a++)
-            code[i][a] = smooth[i][(maxIdx[i] + a * segmentWidth) % idSamples] + '0';
+        for (int a = 0; a < id_bits * 2; a++)
+            code[i][a] = smooth[i][(maxIdx[i] + a * segmentWidth) % id_samples] + '0';
 
-        code[i][idBits*2] = 0;
+        code[i][id_bits*2] = 0;
     }
 
     if(variance[0] < variance[1])
         segIdx = 0;
     else
         segIdx = 1;
-    printf("solution %d\n\n", segIdx);
+    if (debug) printf("solution %d\n\n", segIdx);
 
     tracked_object.u = ellipse_centers.u[segIdx];
     tracked_object.v = ellipse_centers.v[segIdx];
@@ -732,33 +732,33 @@ void CCircleDetect::ambiguityAndObtainCode(CRawImage *image)
     tracked_object.n1 = ellipse_centers.n[segIdx][1];
     tracked_object.n2 = ellipse_centers.n[segIdx][2];
 
-    maxIndex = maxIdx[segIdx];
+    max_index = maxIdx[segIdx];
 
-    //char realCode[idBits*4];
-    char realCode[idBits + 1];
+    //char realCode[id_bits*4];
+    char realCode[id_bits + 1];
 
-    SDecoded segment_decode = decoder_->decode(code[segIdx], realCode, maxIndex, outer.v0, outer.v1);
+    SDecoded segment_decode = decoder_->decode(code[segIdx], realCode, max_index, outer.v0, outer.v1);
     outer.ID = segment_decode.id + 1;
     tracked_object.angle = segment_decode.angle;
 
     if (debug)
     {
-        printf("CODE %i %i %.3f\n", segment_decode.id, maxIndex, segment_decode.angle);
-        printf("Realcode %s %i %s\n", code[segIdx], segment_decode.edgeIndex, realCode);
+        printf("CODE %i %i %.3f\n", segment_decode.id, max_index, segment_decode.angle);
+        printf("Realcode %s %i %s\n", code[segIdx], segment_decode.edge_index, realCode);
         printf("ORIG signal: ");
-        for (int a = 0; a < idSamples; a++) printf("%.2f ", signal[segIdx][a]);
+        for (int a = 0; a < id_samples; a++) printf("%.2f ", signal[segIdx][a]);
         printf("\nsmooth: ");
-        for (int a = 0; a < idSamples; a++) printf("%.2f ", smooth[segIdx][a]);
+        for (int a = 0; a < id_samples; a++) printf("%.2f ", smooth[segIdx][a]);
         printf("\n");
     }
 
-    for (int a = 0; a < idSamples; a++)
+    for (int a = 0; a < id_samples; a++)
     {
         pos = ((int)x[segIdx][a] + ((int)y[segIdx][a]) * image->width_);
         if (pos > 0 && pos < image->width_ * image->height_)
         {
             image->data_[step * pos + 0] = 0;
-            image->data_[step * pos + 1] = (unsigned char)(255.0 * a / idSamples);
+            image->data_[step * pos + 1] = (unsigned char)(255.0 * a / id_samples);
             image->data_[step * pos + 2] = 0;
         }
     }
@@ -803,4 +803,4 @@ void CCircleDetect::setDraw(bool draw)
     draw_ = draw;
 }
 
-}
+} // namespace whycon

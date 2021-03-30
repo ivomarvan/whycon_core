@@ -13,21 +13,22 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 
-#include "whycon/SStructDefs.h"
+#include "SStructDefs.h"
 
-namespace whycon
-{
+namespace whycon {
+
 
 class CTransformation
 {
     public:
         /* circle diameter of the pattern */
-        CTransformation(float circle_diam);
+        CTransformation(float circle_diam, bool debug);
 
         ~CTransformation();
 
         /* update of intrinsic and distortion camera params */
         void updateCameraParams(const std::vector<float> &intri, const std::vector<float> &dist);
+        void updateCameraParams(cv::Mat &intri, cv::Mat &dist);
 
         /* calculate marker 3D or 2D coordinates in user-defined coordinate system from the segment description provided by the CCircleDetector class, see 4.1-4.4 of [1] */
         SEllipseCenters calcSolutions(const SSegment segment);
@@ -93,6 +94,8 @@ class CTransformation
 
         cv::Mat intrinsic_mat_;         // camera intrinsic matrix
         cv::Mat distortion_coeffs_;     // camera distortion parameters
+        
+        bool debug;
 };
 
 } // namespace whycon

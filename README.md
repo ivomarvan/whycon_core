@@ -1,4 +1,6 @@
-## WhyCon
+## WhyCon ![Drag Racing](whycon-code.jpg)
+
+
 
 ### A precise, efficient and low-cost localization system 
 
@@ -9,13 +11,19 @@ _WhyCon_ is meant as an alternative to widely used and expensive localization sy
 _WhyCon-orig_ is WhyCon's original, minimalistic version that was supposed to be ROS and openCV independent.
 
 
-| WhyCon example application (video)  | Scenario description |
-| ------ | ----------- |
-|[![WhyCon applications](https://raw.githubusercontent.com/wiki/gestom/WhyCon/pics/whycon.png)](https://www.youtube.com/watch?v=KgKrN8_EmUA"AAAA")|-precise docking to a charging station (EU project STRANDS),<br/> -fitness evaluation for self-evolving robots (EU proj. SYMBRION),<br/>-relative localization of UAV-UGV formations (CZ-USA project COLOS),<br/>-energy source localization in (EU proj REPLICATOR),<br/>-robotic swarm localization (EU proj HAZCEPT).|
-
 The _WhyCon_ system was developed as a joint project between the University of Buenos Aires, Czech Technical University and University of Lincoln, UK.
 The main contributors were [Matias Nitsche](https://scholar.google.co.uk/citations?user=Z0hQoRUAAAAJ&hl=en&oi=ao), [Tom Krajnik](http://scholar.google.co.uk/citations?user=Qv3nqgsAAAAJ&hl=en&oi=ao) and [Jan Faigl](https://scholar.google.co.uk/citations?user=-finD_sAAAAJ&hl=en). Each of these contributors maintains a slightly different version of WhyCon.
 
+## History of the repo
+
+There are many implementations of this idea on GitHub. Because they come from the scientific environment, they are at different stages of development and with different modifications.
+The goal of this implementation is to enable the development of the core of this idea as an independent library that can be used by other projects.
+
+The basis for this library is the implementation from https://github.com/jiriUlr/whycon-ros.
+
+There is a fully functional reproduction of individual marks in the image, as well as their identification (WhyCode).
+
+## Other significant implementations
 | WhyCon version  | Application | Main features | Maintainer|
 | --------------- | ----------- | ------ | ----- |
 | [WhyCon-orig](../../) | general | 2D, 3D, ROS, lightweight, autocalibration | [Tom Krajnik](http://scholar.google.co.uk/citations?user=Qv3nqgsAAAAJ&hl=en&oi=ao)|
@@ -31,113 +39,57 @@ If you decide to use this software for your research, please cite <i>WhyCon</i> 
 
 -----
 
-### Setting up WhyCon in ROS
-
-#### Quick setup for initial testing
-
-0. Have ROS Kinetic and appropriate camera driver installed. Also have a <a href="http://wiki.ros.org/camera_calibration/Tutorials/MonocularCalibration">calibrated camera</a> with distortion model "plumb bob".
-1. Install the required <a href="#dependencies">libraries</a>
-```
-sudo apt-get install libsdl1.2-dev libsdl-ttf2.0-dev libncurses5-dev graphicsmagick-libmagick-dev-compat
-```
-2. Download the code from GitHub into a catkin workspace.
-3. Compile the code - just type `catkin_make` in workspace directory.
-4. Source setup script in package directory into shell enviroment e.g. `source devel/setup.bash`
-5. Download, resize and print one circular <a href="id/test.pdf">pattern</a> - you have the pattern also in the <i>id/test.pdf</i> file.
-6. Run code by <i>roslaunch</i> and remap subsribed camera topics either on start up through arguments
-```
-roslaunch whycon_ros whycon.launch camInfo:=/<camera>/camera_info camRaw:=/<camera>/image_raw
-```
-or rewrite file <a href="launch/whycon.launch">whycon.launch</a> so default values of tags <i>arg</i> called <i>camInfo</i> and <i>camRaw</i> will match topics <i>camera_info</i> and <i>image_raw</i>. Then it's just
-```
-roslaunch whycon_ros whycon.launch
-```
-7. If using patterns with encoded ID keep the option <i>identify</i> turned on in <i>rqt_reconfigure</i> and if without ID, then turn it off!!!
-8. You should see the image with some numbers below the circle. Pressing <i>D</i> shows the segmentation result.
-9. You can change the parameters in <i>rqt_reconfigure</i> which should open together with whycon GUI.
-
-#### Generating tags with ID
-
-1. Folder <a href="id/">id/</a> contains code which generates tags with IDs.
-2. Move to the <i>id</i> folder and type `make`.
-2. Run `./whycon-id-gen` followed by a number of bits and it will create tags in the working directory.
-3. Other program parameters are specified in help `./whycon-id-gen -h`
-4. Number of ID bits has to be then passed to whycon on start up. The default value is 5.
-```
-roslaunch whycon_ros whycon.launch [...] idBits:=...
-```
-5. Other ID parameters are treated the same way. ID samples as `idSamples:=...` and Hamming distance as `hammingDist:=...`
-
-#### Setting up the coordinate system
-
-1. If you have resized the markers (their default size is 122mm), then adjust their diameter in the <i>rqt_reconfigure</i>.
-2. Print additional four circular <a href="id/test.pdf">markers</a> and place to the corners of your (reclangular) operational space.
-3. Position and fixate your camera so that it has all four circles in it's field of view.
-4. Run whycon and modify the dimensions of the operation space in the <i>rqt_reconfigure</i> - the system will now assume that the four markers are at positions [0,0],[fieldLength,0], [0,fieldWidth],[fieldLength,fieldWidth]. 
-5. Adjust the parameter <i>numBots</i> - the number of patterns you want to track plus 4.
-6. Once all the patterns are found, press `a` and the four outermost patterns will be used to calculate the coordinate system.
-7. Alternatively, you can press `r` and then click the four circles that define the coordinate system.
-8. Pressing 1 should show you the patterns' positions in camera-centric coordinates (x-axis equals to camera optical axis), pressing 2 and 3 will display marker coordinates in user-defined 2D or 3D coordinate systems.
-9. Pressing `+`,`-` changes the number of localized patterns.
-
-#### Logs, GUI, recording topics
-
-1. GUI can be omitted by passing argument `useGui:=false` at strat up.
-2. Video and communication topics can be save using <i>rosbag</i>.
-
-#### GUI key binding
-
-- `h` - show/hide help
-- `+` - increase the number of tracked patterns
-- `-` - decrease the number of tracked patterns
-- `1` - camera coordinate system
-- `2` - planar coordinate system
-- `3` - 3D coordinate system
-- `l` - draw/hide coordinates
-- `d` - draw/hide segmentation outcome and print debug info
-- `s` - save current image
-- `a` - autocalibration (searches for 4 outermost patterns and uses them to establisht the coordinate system)
-- `r` - manual calibration (click the 4 calibration patterns with mouse)
-- `ESC` - exit WhyCon
-
-- Individual patterns to be tracked can be selected by a mouse click.
-- `m` and `n` are recommended to use only with one tracked pattern.
-- `m` - prints camera coords and eigenvalues of the first pattern
-- `n` - prints image coords and eigenvalues of the first pattern
-
-#### Topics
-##### Published
-1. /whycon_ros/markers - you can find its header files in <a href="msg/">msg</a> folder
-   - Header header
-   - whycon_ros/Marker[] markers
-     - float32 u                        # camera coordinate
-     - float32 v                        # camera coordinate
-     - int32 size                       # size of the segment in pixels
-     - int8 id                          # ID of pattern
-     - geometry_msgs/Pose position      # position with quaternion as orientation
-     - geometry_msgs/Vector3 rotation   # vector of Euler angles - pitch, roll, yaw
-##### Subscribed
-1. /&lt;camera&gt;/camera_info - camera matrix and distortion coeffs
-2. /&lt;camera&gt;/image_raw - raw image data without correction
-
-#### Some additional remarks
-
-1. At this point, you can start experimenting with the syste by adding whatever features you might think useful.
-2. We have tried to comment the code so an experienced programmer should be able to alter the system accordingly. However, if you have any questions regarding the code, feel free to contact [Tom Krajnik](http://scholar.google.co.uk/citations?user=Qv3nqgsAAAAJ&hl=en&oi=ao) or [Matias Nitsche](https://scholar.google.co.uk/citations?user=Z0hQoRUAAAAJ&hl=en&oi=ao)
-3. If you use this localization system for your research, please don't forget to cite at least one relevant paper from these [bibtex](http://raw.githubusercontent.com/wiki/gestom/CosPhi/papers/WhyCon.bib) records.
-4. Have fun!
-</ol>
-
-<hr>
-
 ### <a name="dependencies">Dependencies</a>
 
-All the following libraries are probably in your packages.
+* <b>opencv</b>
 
-1. <b>libsdl1.2-dev</b> for graphical user interface.
-2. <b>libsdl-ttf2.0-dev</b> to print stuff in the GUI.
-3. <b>libncurses5-dev</b> to print stuff on the terminal.
-4. <b>graphicsmagick-libmagick-dev-compat</b> to generate IDs.
+### <a name="build">How to build and install</a>
+####In general
+To see a current variable setting of Makefile you can call 
+`make info`
+
+If you want to set a parameter, you can do it as follows
+`make info USE_OPENCV_FROM_PYTHON=1`
+(make USE_OPENCV_FROM_PYTHON=1)
+
+####OpenCv and other (Python for example)
+Unfortunately, the current implementation is dependent on OpenCV. 
+If you expect to use the library with another application/library (such as Python), 
+you need to use the **same version of the OpenCV** library.
+
+If the variable USE_OPENCV_FROM_PYTHON = 1 (default is 0) 
+the makefile tries to find OpenCV, which is in the appropriate version of Python.
+
+If you use a **virtual** Python **environment**, you must **activate** it during the compilation.
+
+(For example 
+`conda activate <your enviroment>`
+or `source venv/bin/activate`
+, ...)
+
+####Compilation and linking
+
+`make`
+
+or (for Python, inside of Python enviroment ) 
+
+`make USE_OPENCV_FROM_PYTHON=1` 
+
+
+#### <a name="install">Install</a>
+`sudo make install`
+
+
+#### <a name="uninstall">Uninstall</a>
+`sudo make install`
+
+### <a name="usecases">Projects that produce this library</a>
+* <a href="https://github.com/ivomarvan/pywhycon">Python wrapper for whycon (vision-based localization system)</a>
+
+### <a name="todo">To Do List</a>
+* Transfer hidden parameters from code to configurations.
+* Add tests.  
+* Remove the dependency on opencv (used mainly for coordinate transformation).
 
 ### References
 

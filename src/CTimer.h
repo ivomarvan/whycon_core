@@ -8,10 +8,10 @@
 #include <sys/time.h>
 #include <stdlib.h>
 
-#define TIMEOUT_INTERVAL 40000
+namespace whycon {
 
-namespace whycon
-{
+
+#define TIMEOUT_INTERVAL 40000
 
 class CTimer
 {
@@ -35,6 +35,6 @@ class CTimer
 		int timeoutInterval;
 };
 
-}
+} // namespace whycon
 
 #endif

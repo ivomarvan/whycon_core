@@ -8,15 +8,15 @@
 #include <string>
 #include <cmath>
 
-// WhyCon/WhyCode libs
-#include "whycon/CTimer.h"
-#include "whycon/CCircleDetect.h"
-#include "whycon/CTransformation.h"
-#include "whycon/CNecklace.h"
-#include "whycon/CRawImage.h"
+// WhyCode libs
+#include "CTimer.h"
+#include "CCircleDetect.h"
+#include "CTransformation.h"
+#include "CNecklace.h"
+#include "CRawImage.h"
 
-namespace whycon
-{
+namespace whycon {
+
 
 class CWhycon {
 
@@ -35,14 +35,18 @@ class CWhycon {
         int num_static_ = 0;        // num of non-moving markers
 
         // marker identification
-        int id_bits_;       // num of ID bits
-        int id_samples_;    // num of samples to identify ID
+        int id_bits_;       // num of ID id_bits
+        int id_samples_;    // num of id_samples to identify ID
         int hamming_dist_;  // hamming distance of ID code
 
-        CWhycon();
+        bool autocalibrate_ = false;                    // is the autocalibration in progress ?
+        bool mancalibrate_ = false;
+        bool debug;
+
+        CWhycon(bool debug);
         ~CWhycon();
         
-        void init(float circle_diam, bool use_gui, int id_b, int id_s, int ham_dist, int markers, int img_w, int img_h);
+        void init(float circle_diam, bool use_gui, int id_b, int id_s, int ham_dist, int markers, bool identify, int img_w, int img_h);
         void setDrawing(bool draw_coords, bool draw_segments);
         void setCoordinates(ETransformType type);
         void autocalibration();
@@ -52,6 +56,7 @@ class CWhycon {
         void selectMarker(float x, float y);
         void updateConfiguration(bool id, float diam, int markers, int size, double fl, double fw, double ict, double fct, double art, double cdtr, double cdta);
         void updateCameraInfo(std::vector<float> &intrinsic_mat, std::vector<float> &distortion_coeffs);
+        void updateCameraInfo(cv::Mat &intrinsic_mat, cv::Mat &distortion_coeffs);
         void processImage(CRawImage *image, std::vector<SMarker> &whycon_detections);
 
     private:
@@ -70,7 +75,7 @@ class CWhycon {
         std::deque<CCircleDetect*> detector_array_;     // array of detector instances for each marker
 
         bool calibrated_coords_;
-
+        bool initialized = false; // is whole object (with all object which it owns) initialized?
 
 
 
@@ -83,13 +88,11 @@ class CWhycon {
         std::vector<STrackedObject> calib_tmp_;         // array to store several measurements of a given calibration pattern
         int calib_step_ = calibration_steps_ + 2;       // actual calibration step (num of measurements of the actual pattern)
         
-        bool autocalibrate_ = false;                    // is the autocalibration in progress ?
-        bool mancalibrate_ = false;
+       
 
         ETransformType last_transform_type_ = TRANSFORM_2D;     // pre-calibration transform (used to preserve pre-calibation transform type)
-        int was_markers_ = 1;                                   // pre-calibration number of makrers to track (used to preserve pre-calibation number of markers to track)
+        int was_markers_ = 1;                                   // pre-calibration number of makrers to track (used to preserve pre-calibation number of markers to track)        
 
-        
         
 
         /*manual calibration can be initiated by pressing 'r' and then clicking circles at four positions (0,0)(fieldLength,0)...*/
@@ -99,6 +102,6 @@ class CWhycon {
         void autoCalib();
 };
 
-}
+} // namespace whycon
 
 #endif

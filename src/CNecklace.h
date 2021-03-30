@@ -4,10 +4,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include "whycon/SStructDefs.h"
+#include "SStructDefs.h"
 
-namespace whycon
-{
+namespace whycon {
 
 typedef struct {
     int id;
@@ -19,17 +18,17 @@ typedef struct {
 class CNecklace {
 
     public:
-        CNecklace(int bits, int samples, int minimalHamming = 1);
+        CNecklace(int id_bits, int id_samples, int minimalHamming = 1, bool debug = false);
 
         ~CNecklace();
 
         SNecklace get(int sequence, bool probabilistic = false, float confidence = 1.0);
 
-        int verifyHamming(int a[], int bits, int len);
+        int verifyHamming(int a[], int id_bits, int len);
 
         float observationEstimation(float confidence);
 
-        SDecoded decode(char *code, char *realCode, int maxIndex, float segmentV0, float segmentV1);
+        SDecoded decode(char *code, char *realCode, int max_index, float segmentV0, float segmentV1);
 
     private:
         SNecklace unknown;      // default unknown ID
@@ -37,8 +36,8 @@ class CNecklace {
 
         float* probArray;       // probability for each ID
         int maxID;              // max ID used for Bayes probability
-        int idSamples;          // samples to determine black/white signal
-        int length;             // number of ID bits
+        int id_samples;          // id_samples to determine black/white signal
+        int length;             // number of ID id_bits
         int idLength;           // amount of all possible IDs
         bool debug;             // debugging the class
 
@@ -49,6 +48,6 @@ class CNecklace {
         int getMinimalHamming(int a, int len);
 };
 
-}
+} // namespace whycon
 
 #endif

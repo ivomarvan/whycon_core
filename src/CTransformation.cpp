@@ -10,14 +10,14 @@
 #include <cstdio>
 #include <cmath>
 
-#include "whycon/CTransformation.h"
+#include "CTransformation.h"
 
-namespace whycon
-{
+namespace whycon {
 
-CTransformation::CTransformation(float circle_diam) :
+CTransformation::CTransformation(float circle_diam, bool debug) :
     transform_type_(TRANSFORM_NONE),
-    circle_diameter_(circle_diam)
+    circle_diameter_(circle_diam),
+    debug(debug)
 {
     intrinsic_mat_ = cv::Mat::eye(3,3, CV_32FC1);
     distortion_coeffs_ = cv::Mat::zeros(1,5, CV_32FC1);
@@ -59,6 +59,11 @@ void CTransformation::updateCameraParams(const std::vector<float> &intri, const 
         for(int j = 0; j < 3; j++)
             intrinsic_mat_.at<float>(i, j) = intri[3 * i + j];
     }
+}
+
+void CTransformation::updateCameraParams(cv::Mat &intri, cv::Mat &dist) {
+    intrinsic_mat_ = intri;
+    distortion_coeffs_ = dist;
 }
 
 void CTransformation::reTransformXY(float &x, float &y, float &z)
@@ -184,6 +189,9 @@ void CTransformation::loadCalibration(const std::string &str)
 {
     try
     {
+        if (debug) {
+            std::cout << "CTransformation::loadCalibration:" << str << std::endl;
+        }
         cv::FileStorage fs(str, cv::FileStorage::READ);
         if(!fs.isOpened())
             throw std::runtime_error("Could not open/load calibration file.");
@@ -217,9 +225,13 @@ void CTransformation::loadCalibration(const std::string &str)
 
         fs.release();
         calibrated_ = true;
+        if (debug) {
+            std::cout << " ... OK" << std::endl;
+        }
     }
     catch(const std::exception& e)
     {
+        std::cerr << e.what();
         throw;
     }
 }
@@ -662,4 +674,4 @@ void CTransformation::calcEulerFromQuat(STrackedObject &obj)
     // std::printf("roll %.3f pitch %.3f yaw %.3f\n", obj.roll, obj.pitch, obj.yaw);
 }
 
-}
+} // namespace whycon

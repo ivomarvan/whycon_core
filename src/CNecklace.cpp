@@ -1,14 +1,12 @@
-#include "whycon/CNecklace.h"
+#include "CNecklace.h"
 
-namespace whycon
-{
+namespace whycon {
 
-CNecklace::CNecklace(int bits, int samples, int minimalHamming)
+CNecklace::CNecklace(int id_bits, int id_samples, int minimalHamming, bool debug): debug(debug)
 {
-    debug = false;
-    length = bits;
+    length = id_bits;
     maxID = 0;
-    idSamples = samples;
+    id_samples = id_samples;
     idLength = pow(2, length);
     idArray = (SNecklace*)malloc(sizeof(SNecklace) * idLength);
 
@@ -21,7 +19,7 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming)
     /*for every possible id*/
     for (int id = 0; id < idLength; id++)
     {
-        /*check if there is a lower number that could be created by bitshifting it*/
+        /*check if there is a lower number that could be created by id_bitshifting it*/
         tempID  = id;
         rotations = 0;
         int cached [length - 1];
@@ -88,10 +86,14 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming)
     for (int i = 0; i < idLength; i++)
     {
         if(maxID < idArray[i].id) maxID = idArray[i].id;
+        
     }
 
+
     probArray = (float*)malloc(sizeof(float) * maxID);
-    for (int id = 0; id < maxID; id++) probArray[id] = 1. / (float)maxID;
+    for (int id = 0; id < maxID; id++) {
+        probArray[id] = 1. / (float)maxID;
+    }
 }
 
 CNecklace::~CNecklace()
@@ -136,7 +138,7 @@ int CNecklace::getMinimalHamming(int a, int len)
     //return minDist;
 }
 
-int CNecklace::verifyHamming(int a[], int bits, int len)
+int CNecklace::verifyHamming(int a[], int id_bits, int len)
 {
     int overAll = 10000;
     for (int i = 0; i < len; i++)
@@ -150,7 +152,7 @@ int CNecklace::verifyHamming(int a[], int bits, int len)
                 int tempID = a[j];
                 int distance;
                 if (debug) printf("Testing %i vs %i\n", a[i], a[j]);
-                for (int r = 0; r < bits; r++)
+                for (int r = 0; r < id_bits; r++)
                 {
                     distance = getHamming(a[i], tempID);
                     if (debug) printf("Test %i %i %i\n", a[i], tempID, distance);
@@ -168,10 +170,13 @@ int CNecklace::verifyHamming(int a[], int bits, int len)
 
 SNecklace CNecklace::get(int sequence, bool probabilistic, float confidence)
 {
+    // default parameters: bool probabilistic = false, float confidence = 1.0
+    // idLength = pow(2, length); it is 16 for length=4 bits
+
     if (sequence <= 0 || sequence >= idLength) return unknown;
     if (!probabilistic) return idArray[sequence];
 
-    float oe = observationEstimation(confidence);
+    float oe = observationEstimation(confidence);  // 0.121 for MaxId=16, confidence=1
     float o = .0;
 
     for (int i = 0; i < maxID; i++)
@@ -221,35 +226,43 @@ int CNecklace::getEstimatedID()
     return hp;
 }
 
-SDecoded CNecklace::decode(char *code, char *realCode, int maxIndex, float segmentV0, float segmentV1)
+SDecoded CNecklace::decode(char *code, char *realCode, int max_index, float segmentV0, float segmentV1)
 {
+    // "length" is the number of bits.
+    // "realCode" is buffer for string, (char realCode[id_bits + 1]; id_bits==length)
+    
+    // if (debug) printf("CNecklace::decode code:%s, max_index:%i, segmentV0:%f, segmentV1:%f, length:%i,\n", code, max_index, segmentV0, segmentV1, length);
     // determine the control edges' positions
-    int edgeIndex = 0;
+    int edge_index = 0;
+    // Iteration over pair of bits.  Searches for a last sequence of two consecutive zeros.
     for (int a = 0; a < length * 2; a++)
     {
         int p = (a + 1) % (length * 2);
-        if (code[a] == '0' && code[p] == '0') edgeIndex = a;
+        if (code[a] == '0' && code[p] == '0') edge_index = a;
     }
-    edgeIndex = 1 - (edgeIndex % 2);
+    edge_index = 1 - (edge_index % 2); // 0 or 1
 
+    // Iteration over bits.  Construct ID.
     int ID = 0;
     for (int a = 0; a < length; a++)
     {
-        realCode[a] = code[edgeIndex + 2 * a];
+        realCode[a] = code[edge_index + 2 * a]; // Insert every other character from the edge_index
 
         //if (realCode[a] == 'X') ID = -1; /*TODO note #01*/
         //if (ID > -1){ /*TODO note #02*/
 
-            ID = ID * 2;
-            if (realCode[a] == '1') ID++;
+            ID = ID * 2;                    // shif ID to left
+            if (realCode[a] == '1') ID++;   // add leftmost 1 (if in the result)
         //}
     }
-    realCode[length] = 0;
+    realCode[length] = 0;   // add terminal char
+    // if (debug) printf("Ivo: ID:%i, realCode:%s\n", ID, realCode);
     SNecklace result = get(ID);
-    
+    // if (debug) printf("Ivo: SNecklace result = get(%i): id:%i, rotation:%i, hamming:%i\n", ID, result.id, result.rotation, result.hamming);
+
     //float segmentAngle;
-    //segmentAngle = 2*M_PI*(-(float)maxIndex/idSamples+(float)result.rotation/length)+atan2(segmentV1,segmentV0)+1.5*M_PI/length;
-    float segmentAngle = 2*M_PI*(-(float)maxIndex/idSamples-(float)edgeIndex/length/2.0+(float)result.rotation/length)+atan2(segmentV1,segmentV0);//+1.5*M_PI/length;
+    //segmentAngle = 2*M_PI*(-(float)max_index/id_samples+(float)result.rotation/length)+atan2(segmentV1,segmentV0)+1.5*M_PI/length;
+    float segmentAngle = 2*M_PI*(-(float)max_index/id_samples-(float)edge_index/length/2.0+(float)result.rotation/length)+atan2(segmentV1,segmentV0);//+1.5*M_PI/length;
     
     while (segmentAngle > +M_PI) segmentAngle -= 2 * M_PI;
     while (segmentAngle < -M_PI) segmentAngle += 2 * M_PI;
@@ -257,8 +270,9 @@ SDecoded CNecklace::decode(char *code, char *realCode, int maxIndex, float segme
     SDecoded out;
     out.angle = segmentAngle;
     out.id = result.id++;
-    out.edgeIndex = edgeIndex;
+    // if (debug) printf("Ivo: marker decoded ID:%i, edge_index:%d, axis rotation angle:%f\n", out.id, out.edge_index, out.angle);
+    out.edge_index = edge_index;
     return out;
 }
 
-}
+} // namespace whycon

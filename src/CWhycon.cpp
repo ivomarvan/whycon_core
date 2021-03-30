@@ -1,9 +1,8 @@
 #include <stdexcept>
 
-#include "whycon/CWhycon.h"
+#include "CWhycon.h"
 
-namespace whycon
-{
+namespace whycon {
 
 void CWhycon::setDrawing(bool draw_coords, bool draw_segments)
 {
@@ -73,20 +72,13 @@ void CWhycon::loadCalibration(std::string& path)
     }
     catch(const std::exception& e)
     {
-        throw;
+        std::cout << "WARNING: (file:'" <<  path << "') " << e.what() << std::endl;
     }
 }
 
 void CWhycon::saveCalibration(std::string& path)
 {
-    try
-    {
-        trans_->saveCalibration(path);
-    }
-    catch(const std::exception& e)
-    {
-        throw;
-    }
+    trans_->saveCalibration(path);
 }
 
 void CWhycon::selectMarker(float x, float y)
@@ -189,7 +181,7 @@ void CWhycon::autoCalib()
             }
         }
     }
-    std::printf("INDEX: %i %i %i %i\n", index[0], index[1], index[2], index[3]);
+    std::printf("autoCalib INDEX: %i %i %i %i, calib_step:%i, auto_calibration_pre_steps:%i, auto_calibration_steps:%i\n", index[0], index[1], index[2], index[3], calib_step_, auto_calibration_pre_steps_, auto_calibration_steps_);
 
     for(int i = 0; i < 4; i++)
     {
@@ -312,17 +304,20 @@ void CWhycon::processImage(CRawImage *image, std::vector<SMarker> &whycon_detect
 // cleaning up
 CWhycon::~CWhycon()
 {
-    delete trans_;
-    delete decoder_;
-    for(int i = 0; i < num_markers_; i++) delete detector_array_[i];
+    if (initialized) {
+        delete trans_;
+        delete decoder_;
+        for(int i = 0; i < num_markers_; i++) delete detector_array_[i];
+    }
 }
 
-CWhycon::CWhycon() :
+CWhycon::CWhycon(bool debug) :
+    debug(debug),
     draw_coords_(true),
     draw_segments_(false),
-    calibrated_coords_(false)
-{
-}
+    calibrated_coords_(false),
+    initialized(false) // is whole object (with all object which it owns) initialized?
+{}
 
 void CWhycon::updateConfiguration(bool id, float diam, int markers, int size, double fl, double fw, double ict, double fct, double art, double cdtr, double cdta)
 {
@@ -340,7 +335,7 @@ void CWhycon::updateConfiguration(bool id, float diam, int markers, int size, do
         if(num_markers_ < markers)
         {
             for(int i = num_markers_; i < markers; i++)
-                detector_array_.push_back(new CCircleDetect(image_width_, image_height_, identify_, id_bits_, id_samples_, draw_segments_, trans_, decoder_));
+                detector_array_.push_back(new CCircleDetect(image_width_, image_height_, identify_, id_bits_, id_samples_, draw_segments_, trans_, decoder_, debug));
         }
         else
         {
@@ -359,8 +354,14 @@ void CWhycon::updateCameraInfo(std::vector<float> &intrinsic_mat, std::vector<fl
     trans_->updateCameraParams(intrinsic_mat, distortion_coeffs);
 }
 
-void CWhycon::init(float circle_diam, bool use_gui, int id_b, int id_s, int ham_dist, int markers, int img_w, int img_h)
+void CWhycon::updateCameraInfo(cv::Mat &intrinsic_mat, cv::Mat &distortion_coeffs)
 {
+    trans_->updateCameraParams(intrinsic_mat, distortion_coeffs);
+}
+
+void CWhycon::init(float circle_diam, bool use_gui, int id_b, int id_s, int ham_dist, int markers, bool identify, int img_w, int img_h)
+{
+    identify_ = identify;
     circle_diameter_ = circle_diam;
     use_gui_ = use_gui;
     id_bits_ = id_b;
@@ -374,14 +375,14 @@ void CWhycon::init(float circle_diam, bool use_gui, int id_b, int id_s, int ham_
     current_marker_array_.resize(num_markers_);
     last_marker_array_.resize(num_markers_);
 
-    trans_ = new CTransformation(circle_diameter_);
-    decoder_ = new CNecklace(id_bits_, id_samples_, hamming_dist_);
+    trans_ = new CTransformation(circle_diameter_, debug);
+    decoder_ = new CNecklace(id_bits_, id_samples_, hamming_dist_, debug);
 
     // initialize the circle detectors - each circle has its own detector instance
     detector_array_.resize(num_markers_);
     for(int i = 0; i < num_markers_; i++)
-        detector_array_[i] = new CCircleDetect(image_width_, image_height_, identify_, id_bits_, id_samples_, draw_segments_, trans_, decoder_);
-
+        detector_array_[i] = new CCircleDetect(image_width_, image_height_, identify_, id_bits_, id_samples_, draw_segments_, trans_, decoder_, debug);
+    initialized = true;
 }
 
-}
+} // namespace whycon

@@ -1,23 +1,26 @@
 #ifndef WHYCON__CRAWIMAGE_H
 #define WHYCON__CRAWIMAGE_H
 
-#include "whycon/SStructDefs.h"
+#include "SStructDefs.h"
+
+namespace whycon {
 
 /**
 @author Tom Krajnik
 */
 
-namespace whycon
-{
 
 class CRawImage
 {
 
 public:
 
-  CRawImage(int width, int height, int bpp);
+  CRawImage(int width, int height, int bpp = 3);
+  CRawImage(unsigned char* new_data, int width, int height, int bpp);
 
   ~CRawImage();
+
+  void swapRGB();
 
   void updateImage(unsigned char* new_data, int width, int height, int bpp);
 
@@ -38,11 +41,14 @@ public:
   int width_;      // image width
   int height_;     // image height
   int size_;       // image size = width * height * bpp
-  int bpp_;        // image bits per pixel
+  int bpp_;        // image id_bits per pixel
 
   unsigned char* data_;  // image buffer
+
+  private:
+    bool ownData_;
 };
 
-}
+} // namespace whycon
 
 #endif
