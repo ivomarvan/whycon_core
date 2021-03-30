@@ -1,0 +1,35 @@
+
+# C extensions
+*.so
+*.o
+*.exe
+*.out
+
+# Distribution / packaging
+build/
+bin/
+MANIFEST
+
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+
+*.log
+
+# Scrapy stuff:
+.scrapy
+
+
+.idea/
+.directory
+
+
