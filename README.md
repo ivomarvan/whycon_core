@@ -1,4 +1,4 @@
-## WhyCon ![Drag Racing](whycon-code.jpg)
+## WhyCon ![Whycon tag with ID](whycon-code.jpg)
 
 
 
@@ -81,7 +81,7 @@ or (for Python, inside of Python enviroment )
 
 
 #### <a name="uninstall">Uninstall</a>
-`sudo make install`
+`sudo make uninstall`
 
 ### <a name="usecases">Projects that produce this library</a>
 * <a href="https://github.com/ivomarvan/pywhycon">Python wrapper for whycon (vision-based localization system)</a>

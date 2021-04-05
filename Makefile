@@ -2,7 +2,7 @@
 # Author: ivo@marvan.cz
 #
 # - compile whycon common library to *.o files
-# - link to whycon.so
+# - link to whycon_core.so
 # - install library to linux enviroment
 ##################################################################################################################
 
@@ -12,9 +12,9 @@ ROOT_DIR 	:= $(shell realpath .)
 OPENCV_VERSION 	:= opencv4 		# OR opencv
 USE_OPENCV_FROM_PYTHON := 0
 
-.PHONY: make_dirs all clean whycon_lib install uninstall info
+.PHONY: make_dirs all clean whycon_core_lib install uninstall info
 
-all: make_dirs whycon_lib
+all: make_dirs whycon_core_lib
 
 RESULTS_BIN_DIR	:= $(ROOT_DIR)/bin
 
@@ -22,7 +22,7 @@ RESULTS_BIN_DIR	:= $(ROOT_DIR)/bin
 LIB_HEADER_DIR	:= $(ROOT_DIR)/src
 LIB_CPP_DIR 	:= $(ROOT_DIR)/src
 LIB_BUILD_DIR 	:= $(ROOT_DIR)/build
-DYNAMIC_LIB 	:= $(RESULTS_BIN_DIR)/whycon.so
+DYNAMIC_LIB 	:= $(RESULTS_BIN_DIR)/whycon_core.so
 
 SYS_INCLUDE_DIR := /usr/include/whycon
 SYS_LIB_DIR 	:= /usr/lib/whycon
@@ -68,9 +68,9 @@ info:
 	$(info    ================== )
 
 
-whycon_lib: $(DYNAMIC_LIB)
+whycon_core_lib: $(DYNAMIC_LIB)
 
-# compile C++ from whycon_lib
+# compile C++ from whycon_core_lib
 $(LIB_BUILD_DIR)/%.o: $(LIB_CPP_DIR)/%.cpp $(LIB_HEADER_FILES)
 	$(CXX) -I$(LIB_HEADER_DIR) $(LIB_CXXFLAGS) -o $@ -c $<
 
