@@ -2,11 +2,10 @@
 
 namespace whycon {
 
-CNecklace::CNecklace(int id_bits, int id_samples, int minimalHamming, bool debug): debug(debug)
+CNecklace::CNecklace(int id_bits, int id_samples, int minimalHamming, bool debug): debug(debug), id_samples(id_samples)
 {
     length = id_bits;
     maxID = 0;
-    id_samples = id_samples;
     idLength = pow(2, length);
     idArray = (SNecklace*)malloc(sizeof(SNecklace) * idLength);
 
