@@ -4,12 +4,15 @@
 # - compile whycon common library to *.o files
 # - link to whycon_core.so
 # - install library to linux enviroment
+#
+# Some params (like DEBUG_MAKEFILE, OPENCV_CXXFLAGS, OPENCV_LIBS, OPENCV_VERSION) can be set fom environment.
+#	(make OPENCV_CXXFLAGS=..., OPENCV_LIBS=...)
 ##################################################################################################################
 
 DEBUG_MAKEFILE := 0
 
 ROOT_DIR 	:= $(shell realpath .)
-OPENCV_VERSION 	:= opencv4 		# OR opencv
+OPENCV_NAME 	:= opencv 	# opencv4 OR opencv
 USE_OPENCV_FROM_PYTHON := 0
 
 .PHONY: make_dirs all clean whycon_core_lib install uninstall info
@@ -28,11 +31,11 @@ SYS_INCLUDE_DIR := /usr/include/whycon
 SYS_LIB_DIR 	:= /usr/lib/whycon
 
 ifeq ($(USE_OPENCV_FROM_PYTHON),1)
-	COMPILE_OPENCV := $(shell python -c 'import pkgconfig; print(pkgconfig.cflags("$(OPENCV_VERSION)"))')
-	LINKING_OPENCV := $(shell python -c 'import pkgconfig; print(pkgconfig.libs("$(OPENCV_VERSION)"))')
+	OPENCV_CXXFLAGS := $(shell python -c 'import pkgconfig; print(pkgconfig.cflags("$(OPENCV_NAME)"))')
+	OPENCV_LIBS := $(shell python -c 'import pkgconfig; print(pkgconfig.libs("$(OPENCV_NAME)"))')
 else
-	COMPILE_OPENCV := $(shell pkg-config $(OPENCV_VERSION) --cflags)
-	LINKING_OPENCV := $(shell pkg-config $(OPENCV_VERSION) --libs)
+	OPENCV_CXXFLAGS := $(shell pkg-config $(OPENCV_NAME) --cflags)
+	OPENCV_LIBS := $(shell pkg-config $(OPENCV_NAME) --libs)
 endif
 
 
@@ -43,17 +46,20 @@ LIB_OBJ_FILES	:= $(patsubst $(LIB_CPP_DIR)/%.cpp, $(LIB_BUILD_DIR)/%.o, $(LIB_CP
 # compile params
 LIB_CXXFLAGS += -Wall  -fPIC
 # use same version of opencv as python
-LIB_CXXFLAGS 	+= $(COMPILE_OPENCV)
+LIB_CXXFLAGS 	+= $(OPENCV_CXXFLAGS)
 
 # linking params
 LINK_PARAMS += -O3 -shared -std=gnu++11
-LINK_LIBS 	+= $(LINKING_OPENCV)
+LINK_LIBS 	+= $(OPENCV_LIBS)
 
 info:
-	$(info    === Variables ====)
-	$(info    OPENCV_VERSION 	$(OPENCV_VERSION))
-	$(info    COMPILE_OPENCV 	$(COMPILE_OPENCV))
-	$(info    LINKING_OPENCV 	$(LINKING_OPENCV))
+	$(info    )
+	$(info    === Variables === $(ROOT_DIR) ===)
+	$(info    OPENCV_NAME 			$(OPENCV_NAME))
+	$(info    OPENCV_VERSION 		$(OPENCV_VERSION))
+
+	$(info    OPENCV_CXXFLAGS 	$(OPENCV_CXXFLAGS))
+	$(info    OPENCV_LIBS 		$(OPENCV_LIBS))
 	$(info    -------------------)
 	$(info    LIB_HEADER_DIR 	$(LIB_HEADER_DIR))
 	$(info    LIB_CPP_DIR 		$(LIB_CPP_DIR))
